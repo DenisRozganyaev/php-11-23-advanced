@@ -1,6 +1,8 @@
 <?php
+$isInfo = $_GET['info'] ?? false;
 
-if ($_GET['info']) {
+if ($isInfo) {
+    echo "<h1>PHP INFO:</h1>";
     phpinfo();
     die();
 }
