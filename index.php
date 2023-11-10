@@ -1,2 +1,6 @@
 <?php
-phpinfo();
+
+if ($_GET['info']) {
+    phpinfo();
+    die();
+}
