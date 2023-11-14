@@ -1,0 +1,32 @@
+version: "3.8"
+
+volumes:
+  mysql_db_volume:
+    driver: local
+
+networks:
+  php_advanced:
+    driver: bridge
+
+services:
+  app:
+    build:
+      context: .docker/php
+    restart: always
+    ports:
+      - "8081:80"
+    volumes:
+      - .:/var/www/html
+    networks:
+      - php_advanced
+  mysql_db:
+    image: "mysql:8"
+    restart: always
+    ports:
+      - "33061:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+    volumes:
+      - "mysql_db_volume:/var/lib/mysql"
+    networks:
+      - php_advanced
