@@ -1,8 +1,2 @@
 <?php
-$isInfo = $_GET['info'] ?? false;
-
-if ($isInfo) {
-    echo "<h1>PHP INFO:</h1>";
-    phpinfo();
-    die();
-}
+require_once __DIR__ . '/vendor/autoload.php';
