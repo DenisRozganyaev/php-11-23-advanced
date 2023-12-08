@@ -5,7 +5,10 @@
       "App\\": "app/",
       "Config\\": "config/",
       "Core\\": "core/"
-    }
+    },
+    "files": [
+      "routes/web.php"
+    ]
   },
   "require": {
     "larapack/dd": "^1.1",
