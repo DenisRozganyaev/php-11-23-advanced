@@ -7,11 +7,13 @@
       "Core\\": "core/"
     },
     "files": [
-      "routes/web.php"
+      "routes/web.php",
+      "core/helpers.php"
     ]
   },
   "require": {
     "larapack/dd": "^1.1",
-    "ext-pdo": "*"
+    "ext-pdo": "*",
+    "vlucas/phpdotenv": "^5.6"
   }
 }
