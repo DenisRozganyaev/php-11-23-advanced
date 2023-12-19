@@ -2,22 +2,47 @@
 
 namespace App\Controllers;
 
+use App\Models\User;
+use App\Validators\Users\AuthValidator;
+use App\Validators\Users\RegisterValidator;
 use Core\Controller;
 
-class UsersController extends Controller
+class AuthController extends Controller
 {
-    public function index()
+    public function signup(): array
     {
+        $data = requestBody();
+        $validator = new RegisterValidator();
 
+        if ($validator->validate($data)) {
+            $id = User::create([
+                ...$data,
+                'password' => password_hash($data['password'], PASSWORD_BCRYPT)
+            ]);
+
+            return $this->response(
+                200,
+                User::find($id)->toArray()
+            );
+        }
+
+        return $this->response(200, [], $validator->getErrors());
     }
 
-    public function show()
+    public function signin(): array
     {
+        $data = requestBody();
+        $validator = new AuthValidator();
 
-    }
+        if ($validator->validate($data)) {
+            $user = User::findBy('email', $data['email']);
+            if (password_verify($data['password'], $user->password)) {
+                $token = random_bytes(32);
 
-    public function before(string $action, array $params = []): bool
-    {
-        return parent::before($action, $params);
+                return $this->response(200, compact('token'));
+            }
+        }
+
+        return $this->response(200, [], $validator->getErrors());
     }
 }

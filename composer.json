@@ -7,7 +7,7 @@
       "Core\\": "core/"
     },
     "files": [
-      "routes/web.php",
+      "routes/api.php",
       "core/helpers.php"
     ]
   },

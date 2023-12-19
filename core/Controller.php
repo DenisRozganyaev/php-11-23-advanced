@@ -10,4 +10,9 @@ abstract class Controller
     }
 
     public function after(string $action) {}
+
+    protected function response(int $code = 200, array $body = [], array $errors = []): array
+    {
+        return compact('code', 'body', 'errors');
+    }
 }

@@ -20,8 +20,9 @@ class Router
         static::$routes[$route] = $params;
     }
 
-    static public function dispatch(string $uri): void
+    static public function dispatch(string $uri): string
     {
+        $data = [];
         $uri = static::removeQueryVariables($uri);
         $uri = trim($uri, '/');
 
@@ -34,10 +35,15 @@ class Router
             $action = static::getAction($controller);
 
             if ($controller->before($action, static::$params)) {
-                call_user_func_array([$controller, $action], static::$params);
+                $response = call_user_func_array([$controller, $action], static::$params);
                 $controller->after($action);
             }
         }
+
+        return json_response($response['code'], [
+            'data' => $response['body'],
+            'errors' => $response['errors']
+        ]);
     }
 
     static protected function getAction(Controller $controller): string
@@ -81,7 +87,7 @@ class Router
 
     static protected function match(string $uri): bool
     {
-        foreach(static::$routes as $route => $params) {
+        foreach (static::$routes as $route => $params) {
             if (preg_match($route, $uri, $matches)) {
                 static::$params = static::buildParams($route, $matches, $params);
                 return true;
