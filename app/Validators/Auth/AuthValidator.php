@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Validators\Users;
+namespace App\Validators\Auth;
 
 class AuthValidator extends Base
 {

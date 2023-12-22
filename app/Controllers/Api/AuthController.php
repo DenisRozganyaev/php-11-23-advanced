@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\Api;
 
 use App\Models\User;
-use App\Validators\Users\AuthValidator;
-use App\Validators\Users\RegisterValidator;
+use App\Validators\Auth\AuthValidator;
+use App\Validators\Auth\RegisterValidator;
 use Core\Controller;
+use ReallySimpleJWT\Token;
 
 class AuthController extends Controller
 {
@@ -37,7 +38,8 @@ class AuthController extends Controller
         if ($validator->validate($data)) {
             $user = User::findBy('email', $data['email']);
             if (password_verify($data['password'], $user->password)) {
-                $token = random_bytes(32);
+                $expiration = time() + 3600;
+                $token = Token::create($user->id, $user->password, $expiration, 'localhost');
 
                 return $this->response(200, compact('token'));
             }
