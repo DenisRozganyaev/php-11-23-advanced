@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Folder;
 use App\Models\User;
 
 define('BASE_DIR', dirname(__DIR__));
@@ -11,9 +12,8 @@ try {
     $dotenv = \Dotenv\Dotenv::createUnsafeImmutable(BASE_DIR);
     $dotenv->load();
 
-    die(\Core\Router::dispatch($_SERVER['REQUEST_URI']));
-} catch (PDOException $exception) {
-    dd("PDOException", $exception);
+    dd(Folder::where('title', 'IN', ['test', 5, '126'])->sql());
+//    die(\Core\Router::dispatch($_SERVER['REQUEST_URI']));
 } catch (Exception $exception) {
-    dd("Exception", $exception);
+    error_response($exception);
 }

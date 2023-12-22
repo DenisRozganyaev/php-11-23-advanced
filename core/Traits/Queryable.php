@@ -9,7 +9,7 @@ trait Queryable
 
     static protected string $query = '';
 
-    protected array $commands = [];
+    private array $commands = [];
 
     /**
      * @param array $columns (e.g. ['name', 'surname'], ['users.name as u_name']) => SELECT name, surname ....
@@ -59,20 +59,20 @@ trait Queryable
      *  'name' => '...',
      *  'content' => '...'
      * ]
-     * @return  false|int
+     * @return  null|static
      */
-    static public function create(array $fields): false|int
+    static public function create(array $fields): null|static
     {
         $params = static::prepareQueryParams($fields);
         $query = db()->prepare("INSERT INTO " . static::$tableName . " ($params[keys]) VALUES ($params[placeholders])");
 
         if (!$query->execute($fields)) {
-            return false;
+            return null;
         }
 
         $query->closeCursor();
 
-        return (int) db()->lastInsertId();
+        return static::find(db()->lastInsertId());
     }
 
     static public function destroy(int $id): bool
@@ -93,13 +93,84 @@ trait Queryable
         ];
     }
 
+    static public function __callStatic(string $name, array $args): mixed
+    {
+        if (in_array($name, ['where'])) {
+            $obj = static::select();
+            return call_user_func_array([$obj, $name], $args);
+        }
+    }
+
+    public function __call(string $name, array $args): mixed
+    {
+        if (in_array($name, ['where'])) {
+            return call_user_func_array([$this, $name], $args);
+        }
+    }
+
     static protected function resetQuery(): void
     {
         static::$query = '';
     }
 
+    protected function where(string $column, string $operator, $value = null): static
+    {
+        if ($this->prevent(['group', 'limit', 'order', 'having'])) {
+            throw new \Exception(
+                static::class .
+                ": WHERE can not be after ['group', 'limit', 'order', 'having']"
+            );
+        }
+
+        $obj = in_array('select', $this->commands) ? $this : static::select();
+
+        if (
+            !is_null($value) &&
+            !is_bool($value) &&
+            !is_numeric($value) &&
+            !is_array($value) &&
+            !in_array($operator, ['IN', 'NOT IN'])
+        ) {
+            $value = "'$value'";
+        }
+
+        if (is_null($value)) {
+            $value = 'NULL';
+        }
+
+        if (is_array($value)) {
+            $value = array_map(fn($item) => is_string($item) ? "'$item'" : $item, $value);
+            $value = '('. implode(', ', $value) .')';
+        }
+
+        if (!in_array('where', $obj->commands)) {
+            static::$query .= "WHERE";
+        }
+
+        static::$query .= " $column $operator $value";
+        $this->commands[] = 'where';
+
+        return $obj;
+    }
+
+    public function sql(): string
+    {
+        return static::$query;
+    }
+
     public function get(): array
     {
         return db()->query(static::$query)->fetchALl(PDO::FETCH_CLASS, static::class);
+    }
+
+    protected function prevent(array $allowedMethods): bool
+    {
+        foreach ($allowedMethods as $method) {
+            if (in_array($method, $this->commands)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Validators\Users;
+namespace App\Validators\Auth;
 
 use App\Models\User;
 use App\Validators\BaseValidator;
