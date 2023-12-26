@@ -1,6 +1,7 @@
 <?php
 namespace Core\Traits;
 
+use Enums\SQL;
 use PDO;
 
 trait Queryable
@@ -75,6 +76,29 @@ trait Queryable
         return static::find(db()->lastInsertId());
     }
 
+    public function update(array $fields): static
+    {
+        $query = "UPDATE " . static::$tableName . " SET " . $this->updatePlaceholders(array_keys($fields)) . " WHERE id = :id";
+        $query = db()->prepare($query);
+
+        $fields['id'] = $this->id;
+        $query->execute($fields);
+
+        return static::find($this->id);
+    }
+
+    protected function updatePlaceholders(array $keys): string
+    {
+        $string = "";
+        $lastKey = array_key_last($keys);
+
+        foreach($keys as $index => $key) {
+            $string .= "$key = :$key" . ($lastKey === $index ? "" : ", ");
+        }
+
+        return $string;
+    }
+
     static public function destroy(int $id): bool
     {
         $query = db()->prepare("DELETE FROM " . static::$tableName . " WHERE id = :id");
@@ -129,7 +153,8 @@ trait Queryable
             !is_bool($value) &&
             !is_numeric($value) &&
             !is_array($value) &&
-            !in_array($operator, ['IN', 'NOT IN'])
+            !in_array($operator, [SQL::IN_OPERATOR->value, SQL::NOT_IN_OPERATOR->value]) &&
+            $value !== SQL::NULL->value
         ) {
             $value = "'$value'";
         }
@@ -139,7 +164,7 @@ trait Queryable
         }
 
         if (is_array($value)) {
-            $value = array_map(fn($item) => is_string($item) ? "'$item'" : $item, $value);
+            $value = array_map(fn($item) => is_string($item) && $item !== SQL::NULL->value ? "'$item'" : $item, $value);
             $value = '('. implode(', ', $value) .')';
         }
 
@@ -153,9 +178,74 @@ trait Queryable
         return $obj;
     }
 
+    public function startCondition(): static
+    {
+        $this->commands[] = 'startCondition';
+        return $this;
+    }
+
+
+    public function endCondition(): static
+    {
+        $this->commands[] = 'endCondition';
+        static::$query .= ') ';
+
+        return $this;
+    }
+
+    public function andWhere(string $column, string $operator, $value = null): static
+    {
+        static::$query .= " AND" . (in_array('startCondition', $this->commands) ? ' (' : '');
+        return $this->where($column, $operator, $value);
+    }
+
+    public function orWhere(string $column, string $operator, $value = null): static
+    {
+        static::$query .= " OR";
+        return $this->where($column, $operator, $value);
+    }
+
+    /**
+     * @param array $columns = [column_name => order, ...]
+     * ORDER BY col1 ASC, col2 DESC
+     * @return void
+     * @throws \Exception
+     */
+    public function orderBy(array $columns): static
+    {
+        if (!$this->prevent(['select'])) {
+            throw new \Exception(
+                static::class .
+                ": [ORDER BY] can not be called before [SELECT]"
+            );
+        }
+
+        $this->commands[] = 'order';
+        $lastKey = array_key_last($columns);
+        static::$query .= " ORDER BY ";
+
+        foreach ($columns as $column => $order) {
+            static::$query .= "$column $order->value" . ($column === $lastKey ? "" : ", ");
+        }
+
+        return $this;
+    }
+
     public function sql(): string
     {
         return static::$query;
+    }
+
+    public function exists(): bool
+    {
+        if (!$this->prevent(['select'])) {
+            throw new \Exception(
+                static::class .
+                ": exists can not be called before ['select']"
+            );
+        }
+
+        return !empty($this->get());
     }
 
     public function get(): array

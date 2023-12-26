@@ -2,6 +2,7 @@
 
 namespace App\Validators\Folders;
 
+use App\Models\Folder;
 use App\Validators\BaseValidator;
 
 class CreateFolderValidator extends BaseValidator
@@ -14,22 +15,26 @@ class CreateFolderValidator extends BaseValidator
         'title' => 'Title should contain characters, numbers and _-() symbols and has length more than 2 symbols'
     ];
 
-    protected array $skip = ['user_id'];
+    protected array $skip = ['user_id', 'updated_at'];
 
-    protected function checkOnDuplicateTitle(null|int $userId, string $title): bool
+    protected function checkOnDuplicateTitle(string $title): bool
     {
-//        dd(
-//            Folder::where('user_id', '=', $userId)
-//                ->andWhere('title', '=', $title)
-//                ->get()
-//        );
+        $result = !Folder::where('user_id', '=', authId())
+            ->andWhere('title', '=', $title)
+            ->exists();
+
+        if (!$result) {
+            $this->setError('title', 'The folder with the same title already exists!');
+        }
+
+        return $result;
     }
 
     public function validate(array $fields = []): bool
     {
         $result = [
             parent::validate($fields),
-
+            $this->checkOnDuplicateTitle($fields['title'])
         ];
 
         return !in_array(false, $result);
