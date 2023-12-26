@@ -12,8 +12,7 @@ try {
     $dotenv = \Dotenv\Dotenv::createUnsafeImmutable(BASE_DIR);
     $dotenv->load();
 
-    dd(Folder::where('title', 'IN', ['test', 5, '126'])->sql());
-//    die(\Core\Router::dispatch($_SERVER['REQUEST_URI']));
+    die(\Core\Router::dispatch($_SERVER['REQUEST_URI']));
 } catch (Exception $exception) {
     error_response($exception);
 }

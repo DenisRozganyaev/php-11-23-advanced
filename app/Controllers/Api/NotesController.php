@@ -3,20 +3,19 @@
 namespace App\Controllers\Api;
 
 use App\Models\Folder;
-use App\Validators\Folders\CreateFolderValidator;
-use Enums\SQL;
+use App\Models\Note;
+use App\Validators\Notes\CreateNotesValidator;
+use App\Validators\Notes\UpdateNoteValidator;
 use Enums\SqlOrder;
 
-class FoldersController extends BaseApiController
+class NotesController extends BaseApiController
 {
     public function index()
     {
         return $this->response(
-            body: Folder::where('user_id', '=', authId())
-                ->orWhere('user_id', 'IS', SQL::NULL->value)
+            body: Note::where('user_id', '=', authId())
                 ->orderBy([
-                    'user_id' => SqlOrder::ASC,
-                    'title' => SqlOrder::ASC
+                    'updated_at' => SqlOrder::DESC
                 ])
                 ->get()
         );
@@ -24,15 +23,15 @@ class FoldersController extends BaseApiController
 
     public function show(int $id)
     {
-        $folder = Folder::find($id);
+        $note = Note::find($id);
 
-        if ($folder && !is_null($folder->user_id) && $folder->user_id !== authId()) {
+        if ($note && $note->user_id !== authId()) {
             return $this->response(403, [], [
                 'message' => 'This resource is forbidden for you'
             ]);
         }
 
-        return $this->response(body: $folder->toArray());
+        return $this->response(body: $note->toArray());
     }
 
     public function store()
@@ -41,10 +40,10 @@ class FoldersController extends BaseApiController
             requestBody(),
             ['user_id' => authId()]
         );
-        $validator = new CreateFolderValidator();
+        $validator = new CreateNotesValidator();
 
-        if ($validator->validate($data) && $folder = Folder::create($data)) {
-            return $this->response(body: $folder->toArray());
+        if ($validator->validate($data) && $note = Note::create($data)) {
+            return $this->response(body: $note->toArray());
         }
 
         return $this->response(errors: $validator->getErrors());
@@ -52,9 +51,9 @@ class FoldersController extends BaseApiController
 
     public function update(int $id)
     {
-        $folder = Folder::find($id);
+        $note = Note::find($id);
 
-        if ($folder && is_null($folder->user_id) && $folder->user_id !== authId()) {
+        if ($note && $note->user_id !== authId()) {
             return $this->response(403, errors: [
                 'message' => 'This resource is forbidden for you'
             ]);
@@ -65,26 +64,26 @@ class FoldersController extends BaseApiController
             'updated_at' => date('Y-m-d H:i:s')
         ];
 
-        $validator = new CreateFolderValidator();
-
-        if ($validator->validate($data) && $folder = $folder->update($data)) {
-            return $this->response(body: $folder->toArray());
-        }
+        $validator = new UpdateNoteValidator();
+        dd($validator->validate($data));
+//        if ($validator->validate($data) && $folder = $folder->update($data)) {
+//            return $this->response(body: $folder->toArray());
+//        }
 
         return $this->response(errors: $validator->getErrors());
     }
 
     public function destroy(int $id)
     {
-        $folder = Folder::find($id);
+        $note = Note::find($id);
 
-        if ($folder && is_null($folder->user_id) && $folder->user_id !== authId()) {
+        if ($note && $note->user_id !== authId()) {
             return $this->response(403, [], [
                 'message' => 'This resource is forbidden for you'
             ]);
         }
 
-        $result = Folder::destroy($id);
+        $result = Note::destroy($id);
 
         if (!$result) {
             return $this->response(422, [], ['message' => 'Oops smth went wrong']);
