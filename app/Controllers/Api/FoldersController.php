@@ -3,7 +3,10 @@
 namespace App\Controllers\Api;
 
 use App\Models\Folder;
+use App\Models\Note;
+use App\Models\SharedNote;
 use App\Validators\Folders\CreateFolderValidator;
+use Enums\Folders;
 use Enums\SQL;
 use Enums\SqlOrder;
 
@@ -33,6 +36,35 @@ class FoldersController extends BaseApiController
         }
 
         return $this->response(body: $folder->toArray());
+    }
+
+    public function notes(int $id)
+    {
+        $folder = Folder::find($id);
+
+        $notes = match ($folder->title) {
+            Folders::GENERAL->value => Note::where('folder_id', '=', $id)->andWhere('user_id', '=', authId())->get(),
+            Folders::SHARED->value => Note::select(['notes.*'])
+                ->join(
+                    SharedNote::$tableName,
+                    [
+                        [
+                            'left' => 'notes.id',
+                            'operator' => '=',
+                            'right' => SharedNote::$tableName . '.note_id' # тут була помилка, на лекції було .id а має бути .note_id
+                        ],
+                        [
+                            'left' => authId(),
+                            'operator' => '=',
+                            'right' => SharedNote::$tableName . '.user_id'
+                        ]
+                    ],
+                    'RIGHT'
+                )->get(),
+            default => Note::where('folder_id', '=', $id),
+        };
+
+        return $this->response(body: $notes);
     }
 
     public function store()

@@ -4,7 +4,7 @@ namespace App\Models;
 
 class User extends \Core\Model
 {
-    protected static string|null $tableName = 'users';
+    public static string|null $tableName = 'users';
 
     public string | null $email, $password, $token, $created_at, $token_expired_at = null;
 
