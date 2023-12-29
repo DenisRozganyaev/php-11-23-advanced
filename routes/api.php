@@ -24,6 +24,12 @@
     'method' => 'GET'
 ]);
 
+\Core\Router::add('api/folders/{id:\d+}/notes', [
+    'controller' => \App\Controllers\Api\FoldersController::class,
+    'action' => 'notes',
+    'method' => 'GET'
+]);
+
 \Core\Router::add('api/folders/store', [
     'controller' => \App\Controllers\Api\FoldersController::class,
     'action' => 'store',
@@ -70,5 +76,17 @@
     'controller' => \App\Controllers\Api\NotesController::class,
     'action' => 'destroy',
     'method' => 'DELETE'
+]);
+
+\Core\Router::add('api/notes/{note_id:\d+}/share/add', [
+    'controller' => \App\Controllers\Api\SharedNotesController::class,
+    'action' => 'add',
+    'method' => 'POST'
+]);
+
+\Core\Router::add('api/notes/{note_id:\d+}/share/remove', [
+    'controller' => \App\Controllers\Api\SharedNotesController::class,
+    'action' => 'remove',
+    'method' => 'POST'
 ]);
 

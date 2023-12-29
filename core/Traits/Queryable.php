@@ -6,7 +6,7 @@ use PDO;
 
 trait Queryable
 {
-    static protected string|null $tableName = null;
+    static public string|null $tableName = null;
 
     static protected string $query = '';
 
@@ -137,6 +137,27 @@ trait Queryable
         static::$query = '';
     }
 
+    public function join(string $table, array $conditions, string $type = 'LEFT'): static
+    {
+        if (!$this->prevent(['select'])) {
+            throw new \Exception(
+                static::class .
+                ": JOIN can not be BEFORE ['select']"
+            );
+        }
+
+        $this->commands[] = 'join';
+
+        static::$query .= " $type JOIN $table ON ";
+
+        $lastKey = array_key_last($conditions);
+            foreach($conditions as $key => $condition) {
+            static::$query .= "$condition[left] $condition[operator] $condition[right]" . ($key !== $lastKey ? " AND " : " ");
+        }
+
+        return $this;
+    }
+
     protected function where(string $column, string $operator, $value = null): static
     {
         if ($this->prevent(['group', 'limit', 'order', 'having'])) {
@@ -234,6 +255,25 @@ trait Queryable
     public function sql(): string
     {
         return static::$query;
+    }
+
+    public function delete(): bool
+    {
+        $result = false;
+
+        if (!empty(static::$query)) {
+            $sql = preg_replace('/^(SELECT [*\w,\s]+)?(?=\sFROM|$)/i', 'DELETE', static::$query);
+            $query = db()->prepare($sql);
+            $result = $query->execute();
+        }
+
+        if (!empty($this->id)) {
+            $query = db()->prepare("DELETE FROM " . static::$tableName . " WHERE id = :id");
+            $query->bindParam('id', $this->id);
+            $result = $query->execute();
+        }
+
+        return $result;
     }
 
     public function exists(): bool
